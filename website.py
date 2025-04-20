@@ -1,12 +1,20 @@
 from flask import Flask, render_template, request, send_file
 import os
-import numpy as np
-import rasterio
+
+from matplotlib.patches import Patch
 from skimage.measure import find_contours
 from werkzeug.utils import secure_filename
 import tempfile
+
+
+import matplotlib.colors as mcolors
+import matplotlib
+matplotlib.use('Agg')  # علشان نحل مشكلة واجهة العرض
+
+import rasterio
+import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+
 
 app = Flask(__name__)
 UPLOAD_FOLDER = tempfile.gettempdir()
@@ -151,6 +159,83 @@ def saveSlop():
         dst.write(slope.astype(np.float32), 1)
 
     return send_file(output_path, as_attachment=True)
+@app.route("/Aspect", methods=['POST'])
+def generate_aspect_map():
+    # قراءة ملف الـ DEM
+    file = request.files['dem_file']  # استلام الملف من الفورم
+
+    with rasterio.open(file) as src:
+        dem = src.read(1)
+        transform = src.transform
+        pixel_size_x = src.res[0]
+        pixel_size_y = src.res[1]
+
+    # حساب المشتقات
+    dy, dx = np.gradient(dem, pixel_size_y, pixel_size_x)
+
+    # حساب الـ Aspect
+    aspect_rad = np.arctan2(-dx, dy)
+    aspect_deg = np.degrees(aspect_rad)
+    aspect_deg = np.where(aspect_deg < 0, 360 + aspect_deg, aspect_deg)
+
+    # تحديد المناطق المسطحة (Flat)
+    flat_mask = (dx == 0) & (dy == 0)
+    aspect_deg[flat_mask] = -1
+
+    # تصنيف الاتجاهات
+    aspect_classes = np.full_like(aspect_deg, 0)
+    aspect_classes[(aspect_deg == -1)] = 0  # Flat
+    aspect_classes[(aspect_deg >= 0) & (aspect_deg < 22.5)] = 1
+    aspect_classes[(aspect_deg >= 22.5) & (aspect_deg < 67.5)] = 2
+    aspect_classes[(aspect_deg >= 67.5) & (aspect_deg < 112.5)] = 3
+    aspect_classes[(aspect_deg >= 112.5) & (aspect_deg < 157.5)] = 4
+    aspect_classes[(aspect_deg >= 157.5) & (aspect_deg < 202.5)] = 5
+    aspect_classes[(aspect_deg >= 202.5) & (aspect_deg < 247.5)] = 6
+    aspect_classes[(aspect_deg >= 247.5) & (aspect_deg < 292.5)] = 7
+    aspect_classes[(aspect_deg >= 292.5) & (aspect_deg < 337.5)] = 8
+    aspect_classes[(aspect_deg >= 337.5) & (aspect_deg <= 360)] = 1
+
+    # الألوان لكل اتجاه
+    colors = [
+        "#d9d9d9",  # Flat
+        "#ff0000",  # North
+        "#ff9900",  # NE
+        "#ffff00",  # East
+        "#99cc00",  # SE
+        "#339966",  # South
+        "#33cccc",  # SW
+        "#3366cc",  # West
+        "#9900cc",  # NW
+    ]
+    cmap = mcolors.ListedColormap(colors)
+    bounds = np.arange(-0.5, 9.5, 1)
+    norm = mcolors.BoundaryNorm(bounds, cmap.N)
+
+    # رسم الخريطة
+    fig, ax = plt.subplots(figsize=(10, 8))
+    im = ax.imshow(aspect_classes, cmap=cmap, norm=norm)
+    ax.set_title("Aspect Directions", fontsize=14)
+    ax.axis('off')
+
+    legend_labels = [
+        "Flat", "North", "Northeast", "East", "Southeast",
+        "South", "Southwest", "West", "Northwest"
+    ]
+    legend_patches = [Patch(color=colors[i], label=legend_labels[i]) for i in range(len(colors))]
+    ax.legend(handles=legend_patches, loc='lower center', bbox_to_anchor=(0.5, -0.1), ncol=3)
+
+    # اسم الصورة على نفس مسار الـ DEM
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'aspect_result.PNG')
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0.2, dpi=300)
+    plt.close()
+
+    print(f"✅ تم حفظ خريطة Aspect المصنفة هنا: {output_path}")
+    # احفظ النتيجة في ملف جديد
+    #with rasterio.open(output_path, "w", **profile) as dst:
+       # dst.write(slope.astype(np.float32), 1)
+#
+    return send_file(output_path, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
