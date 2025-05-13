@@ -141,6 +141,7 @@ def index():
 @app.route("/slop", methods=['POST'])
 def saveSlop():
     file = request.files['dem_file']
+
     with rasterio.open(file) as src:
         dem = src.read(1)
         transform = src.transform
@@ -151,14 +152,32 @@ def saveSlop():
     dzdx, dzdy = np.gradient(dem, xres, yres)
     slope = np.arctan(np.sqrt(dzdx ** 2 + dzdy ** 2)) * (180 / np.pi)
 
-    profile.update(dtype=rasterio.float32, count=1)
+    # --- إعداد colormap مخصص للعرض (مشابه لـ ArcGIS) ---
+    from matplotlib.colors import ListedColormap, BoundaryNorm
+    colors = ['#00ff00',  # 0-5
+              '#ffff00',  # 5-15
+              '#ffa500',  # 15-30
+              '#ff0000',  # 30-45
+              '#800000']  # 45-90
+    bounds = [0, 5, 15, 30, 45, 90]
+    cmap = ListedColormap(colors)
+    norm = BoundaryNorm(bounds, cmap.N)
 
-    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'slop_result.TIF')
-    # احفظ النتيجة في ملف جديد
-    with rasterio.open(output_path, "w", **profile) as dst:
-        dst.write(slope.astype(np.float32), 1)
+    # --- رسم الخريطة ---
+    fig, ax = plt.subplots(figsize=(10, 8))
+    img = ax.imshow(slope, cmap=cmap, norm=norm)
+    cbar = plt.colorbar(img, ticks=bounds, ax=ax)
+    cbar.set_label('Slope (degrees)')
+    ax.set_title('Slope Map - ArcGIS Style Colormap')
+    ax.axis('off')
+
+    # --- حفظ الصورة ---
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'slope_result_arcgis_style.PNG')
+    plt.savefig(output_path, bbox_inches='tight', dpi=300)
+    plt.close()
 
     return send_file(output_path, as_attachment=True)
+
 @app.route("/Aspect", methods=['POST'])
 def generate_aspect_map():
     # قراءة ملف الـ DEM
