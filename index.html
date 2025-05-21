@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoSpatial Analysis Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Add Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Add Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2a52be;
+            --secondary-color: #4b6cb7;
+            --accent-color: #3f87a6;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-radius: 10px;
+            --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            --transition-time: 0.3s;
+            --chat-primary: #2a52be;
+            --chat-secondary: #e9ecef;
+            --chat-accent: #4b6cb7;
+            --code-bg: #f6f8fa;
+            --code-border: #e1e4e8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, var(--background-color), #e9ecef);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right, 
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            transform: rotate(30deg);
+            animation: shine 8s infinite linear;
+            z-index: 1;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(30deg); }
+            100% { transform: translateX(100%) rotate(30deg); }
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            transition: transform var(--transition-time), box-shadow var(--transition-time);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .file-input-container {
+            position: relative;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all var(--transition-time);
+            cursor: pointer;
+        }
+
+        .file-input-container:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-input-container i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .file-input-container p {
+            margin: 0.5rem 0;
+            color: #666;
+        }
+
+        .file-input-container input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-name {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            word-break: break-all;
+        }
+
+        input[type="number"],
+        select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color var(--transition-time);
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        /* Enhanced Radio Buttons */
+        .format-selection {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+
+        .format-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .format-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .format-option label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background-color: #f1f3f5;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-align: center;
+            color: #495057;
+        }
+
+        .format-option input[type="radio"]:checked + label {
+            background-color: rgba(42, 82, 190, 0.1);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .format-option label:hover {
+            background-color: #e9ecef;
+        }
+
+        .format-option label i {
+            font-size: 1.2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all var(--transition-time);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #3a62ce, #5b7cc7);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: -100%;
+            background: linear-gradient(
+                to right, 
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: all 0.5s;
+        }
+
+        .btn:hover::after {
+            left: 100%;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Chat Widget Styling */
+        .chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            width: 380px;
+            height: 550px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            transform: translateY(calc(100% - 60px));
+        }
+
+        .chat-container.open {
+            transform: translateY(0);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+
+        .chat-container.open .chat-toggle {
+            transform: rotate(180deg);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 4px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background-color: var(--chat-primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            background-color: var(--chat-secondary);
+            color: var(--text-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            max-width: 90%;
+        }
+
+        /* Markdown styling in chat messages */
+        .message.bot .markdown-content {
+            font-size: 0.95rem;
+        }
+
+        .message.bot .markdown-content h1,
+        .message.bot .markdown-content h2,
+        .message.bot .markdown-content h3,
+        .message.bot .markdown-content h4,
+        .message.bot .markdown-content h5,
+        .message.bot .markdown-content h6 {
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .message.bot .markdown-content h1 {
+            font-size: 1.35rem;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3rem;
+        }
+
+        .message.bot .markdown-content h2 {
+            font-size: 1.25rem;
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3rem;
+        }
+
+        .message.bot .markdown-content h3 {
+            font-size: 1.15rem;
+        }
+
+        .message.bot .markdown-content h4 {
+            font-size: 1.05rem;
+        }
+
+        .message.bot .markdown-content h5,
+        .message.bot .markdown-content h6 {
+            font-size: 0.95rem;
+        }
+
+        .message.bot .markdown-content p {
+            margin-bottom: 0.8rem;
+        }
+
+        .message.bot .markdown-content ul,
+        .message.bot .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .message.bot .markdown-content li {
+            margin-bottom: 0.3rem;
+        }
+
+        .message.bot .markdown-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .message.bot .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .message.bot .markdown-content blockquote {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 0.8rem;
+            margin-left: 0;
+            margin-right: 0;
+            color: #555;
+            font-style: italic;
+        }
+
+        .message.bot .markdown-content code {
+            font-family: monospace;
+            background-color: var(--code-bg);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            border: 1px solid var(--code-border);
+        }
+
+        .message.bot .markdown-content pre {
+            background-color: var(--code-bg);
+            border-radius: 5px;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            border: 1px solid var(--code-border);
+        }
+
+        .message.bot .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            border: none;
+        }
+
+        .message.bot .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .message.bot .markdown-content th,
+        .message.bot .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .message.bot .markdown-content th {
+            background-color: #f6f8fa;
+        }
+
+        .message.bot .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .message.typing {
+            background-color: var(--chat-secondary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+
+        .dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background-color: #888;
+            border-radius: 50%;
+            animation: dot-pulse 1.5s infinite;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dot-pulse {
+            0%, 100% {
+                transform: scale(0.7);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #eee;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .chat-input button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .chat-input button:hover {
+            background-color: var(--chat-accent);
+        }
+
+        .chat-input button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #777;
+            padding: 15px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        footer {
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .format-selection {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .chat-container {
+                width: 300px;
+                height: 450px;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+
+        /* Animation for file upload */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1><i class="fas fa-mountain"></i> GeoSpatial Analysis Tool</h1>
+            <p>Advanced terrain analysis tools for Digital Elevation Models</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tools-grid">
+            <!-- Contour Analysis Card -->
+            <div class="card">
+                <h2><i class="fas fa-layer-group card-icon"></i> Contour Analysis</h2>
+                <form id="contourForm" action="/contour" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="contour_dem">Upload DEM File:</label>
+                        <div class="file-input-container" id="contourDemContainer">
+                            <i class="fas fa-file-upload"></i>
+                            <p>Drag & Drop GeoTIFF file or click to browse</p>
+                            <input type="file" name="dem_file" id="contour_dem" accept=".tif,.tiff" required>
+                            <div class="file-name" id="contourFileName"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="interval">Contour Interval (m):</label>
+                        <input type="number" name="interval" id="interval" value="10" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Output Format:</label>
+                        <div class="format-selection">
+                            <div class="format-option">
+                                <input type="radio" id="contour-png" name="output_format" value="png" checked>
+                                <label for="contour-png"><i class="fas fa-image"></i> PNG Image</label>
+                            </div>
+                            <div class="format-option">
+                                <input type="radio" id="contour-tif" name="output_format" value="tif">
+                                <label for="contour-tif"><i class="fas fa-globe-americas"></i> GeoTIFF</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="contourBtn">
+                        <i class="fas fa-map"></i> Generate Contour Map
+                    </button>
+                    
+                    <div class="loading" id="contourLoading">
+                        <div class="loading-spinner"></div>
+                        <span>Processing your data...</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Slope Analysis Card -->
+            <div class="card">
+                <h2><i class="fas fa-mountain card-icon"></i> Slope Analysis</h2>
+                <form id="slopeForm" action="/slope" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="slope_dem">Upload DEM File:</label>
+                        <div class="file-input-container" id="slopeDemContainer">
+                            <i class="fas fa-file-upload"></i>
+                            <p>Drag & Drop GeoTIFF file or click to browse</p>
+                            <input type="file" name="dem_file" id="slope_dem" accept=".tif,.tiff" required>
+                            <div class="file-name" id="slopeFileName"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Output Format:</label>
+                        <div class="format-selection">
+                            <div class="format-option">
+                                <input type="radio" id="slope-png" name="output_format" value="png" checked>
+                                <label for="slope-png"><i class="fas fa-image"></i> PNG Image</label>
+                            </div>
+                            <div class="format-option">
+                                <input type="radio" id="slope-tif" name="output_format" value="tif">
+                                <label for="slope-tif"><i class="fas fa-globe-americas"></i> GeoTIFF</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="slopeBtn">
+                        <i class="fas fa-chart-line"></i> Generate Slope Map
+                    </button>
+                    
+                    <div class="loading" id="slopeLoading">
+                        <div class="loading-spinner"></div>
+                        <span>Processing your data...</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Aspect Analysis Card -->
+            <div class="card">
+                <h2><i class="fas fa-compass card-icon"></i> Aspect Analysis</h2>
+                <form id="aspectForm" action="/aspect" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="aspect_dem">Upload DEM File:</label>
+                        <div class="file-input-container" id="aspectDemContainer">
+                            <i class="fas fa-file-upload"></i>
+                            <p>Drag & Drop GeoTIFF file or click to browse</p>
+                            <input type="file" name="dem_file" id="aspect_dem" accept=".tif,.tiff" required>
+                            <div class="file-name" id="aspectFileName"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Output Format:</label>
+                        <div class="format-selection">
+                            <div class="format-option">
+                                <input type="radio" id="aspect-png" name="output_format" value="png" checked>
+                                <label for="aspect-png"><i class="fas fa-image"></i> PNG Image</label>
+                            </div>
+                            <div class="format-option">
+                                <input type="radio" id="aspect-tif" name="output_format" value="tif">
+                                <label for="aspect-tif"><i class="fas fa-globe-americas"></i> GeoTIFF</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="aspectBtn">
+                        <i class="fas fa-directions"></i> Generate Aspect Map
+                    </button>
+                    
+                    <div class="loading" id="aspectLoading">
+                        <div class="loading-spinner"></div>
+                        <span>Processing your data...</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIS Chat Widget -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header" id="chatHeader">
+            <h3><i class="fas fa-robot"></i> GIS Assistant</h3>
+            <button class="chat-toggle" id="chatToggle">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        </div>
+        <div class="welcome-message">
+            I'm your GIS specialist assistant. Ask me anything about GIS, mapping, spatial analysis, or geospatial technology!
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be appended here dynamically -->
+        </div>
+        <div class="chat-input">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="Ask about GIS, remote sensing, etc..." 
+                aria-label="Message"
+            >
+            <button id="sendButton" type="button" aria-label="Send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 GeoSpatial Analysis Tool | Built with Flask & GIS Technologies</p>
+        </div>
+    </footer>
+
+    <script>
+        // Configure Marked.js options
+        marked.setOptions({
+            breaks: true,           // Add <br> on a single line break
+            gfm: true,              // GitHub Flavored Markdown
+            headerIds: true,        // Generate header IDs
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                } else {
+                    return hljs.highlightAuto(code).value;
+                }
+            }
+        });
+        
+        // File input display and animation
+        function setupFileInput(inputId, fileNameId, containerId) {
+            const input = document.getElementById(inputId);
+            const fileNameElement = document.getElementById(fileNameId);
+            const container = document.getElementById(containerId);
+            
+            input.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    fileNameElement.textContent = this.files[0].name;
+                    container.classList.add('pulse');
+                    setTimeout(() => container.classList.remove('pulse'), 1500);
+                }
+            });
+            
+            // Drag and drop functionality
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                container.style.borderColor = '#2a52be';
+                container.style.backgroundColor = 'rgba(42, 82, 190, 0.05)';
+            });
+            
+            container.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                container.style.borderColor = '#ccc';
+                container.style.backgroundColor = '';
+            });
+            
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                container.style.borderColor = '#ccc';
+                container.style.backgroundColor = '';
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    input.files = e.dataTransfer.files;
+                    fileNameElement.textContent = e.dataTransfer.files[0].name;
+                    container.classList.add('pulse');
+                    setTimeout(() => container.classList.remove('pulse'), 1500);
+                }
+            });
+        }
+        
+        // Show loading indicators when forms are submitted
+        function setupFormSubmission(formId, btnId, loadingId) {
+            const form = document.getElementById(formId);
+            const btn = document.getElementById(btnId);
+            const loading = document.getElementById(loadingId);
+            
+            form.addEventListener('submit', function() {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                loading.style.display = 'flex';
+            });
+        }
+        
+        // Initialize Chat Widget
+        function initChat() {
+            const chatContainer = document.getElementById('chatContainer');
+            const chatHeader = document.getElementById('chatHeader');
+            const chatToggle = document.getElementById('chatToggle');
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            
+            // Session ID for the chat (can be made more robust with UUID)
+            const sessionId = Date.now().toString();
+            
+            // Toggle chat open/close
+            chatHeader.addEventListener('click', () => {
+                chatContainer.classList.toggle('open');
+            });
+            
+            // Handle sending messages
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                
+                // Disable input while processing
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                
+                // Add user message to chat
+                appendMessage(message, 'user');
+                messageInput.value = '';
+                
+                // Show typing indicator
+                showTypingIndicator();
+                
+                // Send to server
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide typing indicator
+                    hideTypingIndicator();
+                    
+                    // Add bot response with markdown parsing
+                    appendMessage(data.response, 'bot', true);
+                    
+                    // Re-enable input
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    messageInput.focus();
+                })
+                .catch(error => {
+                    // Hide typing indicator
+                    hideTypingIndicator();
+                    
+                    // Show error message
+                    appendMessage("Sorry, I encountered an error. Please try again.", 'bot');
+                    
+                    // Re-enable input
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+                    messageInput.focus();
+                    
+                    console.error('Error:', error);
+                });
+            }
+            
+            // Send on button click
+            sendButton.addEventListener('click', sendMessage);
+            
+            // Send on Enter key
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Append message to chat
+            function appendMessage(text, sender, parseMarkdown = false) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', sender);
+                
+                if (parseMarkdown && sender === 'bot') {
+                    const markdownContent = document.createElement('div');
+                    markdownContent.classList.add('markdown-content');
+                    // Convert markdown to HTML
+                    markdownContent.innerHTML = marked.parse(text);
+                    messageElement.appendChild(markdownContent);
+                    
+                    // Apply syntax highlighting to code blocks
+                    messageElement.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightBlock(block);
+                    });
+                } else {
+                    messageElement.textContent = text;
+                }
+                
+                chatMessages.appendChild(messageElement);
+                
+                // Scroll to the bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Show typing indicator
+            function showTypingIndicator() {
+                const typingElement = document.createElement('div');
+                typingElement.classList.add('message', 'bot', 'typing');
+                typingElement.id = 'typingIndicator';
+                
+                const dotsContainer = document.createElement('div');
+                dotsContainer.classList.add('dots');
+                
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.classList.add('dot');
+                    dotsContainer.appendChild(dot);
+                }
+                
+                typingElement.appendChild(dotsContainer);
+                chatMessages.appendChild(typingElement);
+                typingElement.style.display = 'block';
+                
+                // Scroll to the bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Hide typing indicator
+            function hideTypingIndicator() {
+                const typingElement = document.getElementById('typingIndicator');
+                if (typingElement) {
+                    typingElement.remove();
+                }
+            }
+        }
+        
+        // Initialize all functionalities on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileInput('contour_dem', 'contourFileName', 'contourDemContainer');
+            setupFileInput('slope_dem', 'slopeFileName', 'slopeDemContainer');
+            setupFileInput('aspect_dem', 'aspectFileName', 'aspectDemContainer');
+            
+            setupFormSubmission('contourForm', 'contourBtn', 'contourLoading');
+            setupFormSubmission('slopeForm', 'slopeBtn', 'slopeLoading');
+            setupFormSubmission('aspectForm', 'aspectBtn', 'aspectLoading');
+            
+            // Initialize chat widget
+            initChat();
+        });
+    </script>
+</body>
+</html>
