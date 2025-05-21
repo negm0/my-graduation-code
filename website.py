@@ -21,96 +21,40 @@ UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
-def generate_contour_colored(dem_data, level_step):
-    min_val, max_val = np.min(dem_data), np.max(dem_data)
-    levels = np.arange(min_val, max_val, level_step)
+def generate_colored_contour_png(dem_data, transform, output_path, interval):
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
 
-    # خلفية بيضاء (RGB)
-    contour_rgb = np.ones((dem_data.shape[0], dem_data.shape[1], 3), dtype=np.uint8) * 255
+    # تحضير الإحداثيات
+    height, width = dem_data.shape
+    cols, rows = np.meshgrid(np.arange(width), np.arange(height))
+    x = transform.c + cols * transform.a + rows * transform.b
+    y = transform.f + cols * transform.d + rows * transform.e
 
-    # ألوان عشوائية للمستويات (يمكنك تحديد ألوان ثابتة لو تحب)
-    colors = plt.cm.jet(np.linspace(0, 1, len(levels)))[:, :3] * 255  # أخذ ألوان من colormap وتحويلها لـ RGB
+    # توليد المستويات
+    min_val, max_val = np.nanmin(dem_data), np.nanmax(dem_data)
+    levels = np.arange(min_val, max_val, interval)
 
+    # Colormap تلقائي أو ثابت
+    cmap = plt.get_cmap('jet')
+    colors = [cmap(i / len(levels)) for i in range(len(levels))]
+
+    # رسم الكونتور
+    plt.figure(figsize=(10, 8))
     for i, level in enumerate(levels):
-        contours = find_contours(dem_data, level)
-        color = colors[i].astype(np.uint8)
-        for contour in contours:
-            for x, y in contour:
-                x, y = int(x), int(y)
-                if 0 <= y < dem_data.shape[0] and 0 <= x < dem_data.shape[1]:
-                    contour_rgb[y, x] = color
+        cs = plt.contour(x, y, dem_data, levels=[level], colors=[colors[i]], linewidths=1.5)
+        plt.clabel(cs, fmt='%d', fontsize=8, colors='black')
 
-    # قلب الاتجاه لو لازم
-    contour_rgb = np.flipud(contour_rgb)
-    return contour_rgb
+    plt.title("Colored Contour Map")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.axis("equal")
+    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=10))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(nbins=10))
 
-# توليد خطوط الكنتور
-def generate_contour(dem_data, level_step):
-    min_val, max_val = np.min(dem_data), np.max(dem_data)
-    levels = np.arange(min_val, max_val, level_step)
-
-    print("levels count: " + str(len(levels)))
-    contour_mask = np.full((dem_data.shape[0], dem_data.shape[1], 3), fill_value=[255,255,255], dtype=np.uint8)
-    for level in levels:
-        # TODO: اتاكد ان الالوان واضحة على خلفية بيضة
-        random_rgb = np.random.randint(0, 256, size=3).tolist()
-        contours = find_contours(dem_data, level)
-        for contour in contours:
-            for x, y in contour:
-                if 0 <= int(y) < contour_mask.shape[0] and 0 <= int(x) < contour_mask.shape[1]:
-                    contour_mask[int(y), int(x)] = random_rgb
-
-    contour_mask = np.flipud(contour_mask)
-    return contour_mask
-
-
-def save_rgb_contour_tif(contour_mask, transform, crs, output_path):
-    # Flip transform if needed (because of np.flipud)
-    new_transform = rasterio.transform.Affine(
-        transform.a, transform.b, transform.c,
-        transform.d, -transform.e, transform.f + (transform.e * contour_mask.shape[0])
-    )
-
-    # Rearrange from (H, W, 3) → (3, H, W)
-    contour_mask = contour_mask.transpose((2, 0, 1))
-
-    with rasterio.open(
-        output_path,
-        'w',
-        driver='GTiff',
-        height=contour_mask.shape[1],
-        width=contour_mask.shape[2],
-        count=3,  # RGB = 3 bands
-        dtype=rasterio.uint8,
-        crs=crs,
-        transform=new_transform
-    ) as dst:
-        dst.write(contour_mask)
-
-def save_contour_as_tif(contour_data, transform, crs, output_path):
-    new_transform = rasterio.transform.Affine(
-        transform.a, transform.b, transform.c,
-        transform.d, -transform.e, transform.f + (transform.e * contour_data.shape[0])
-    )
-
-    if contour_data.ndim == 3 and contour_data.shape[2] == 3:
-        contour_data = contour_data.transpose((2, 0, 1))
-        count = 3
-    else:
-        count = 1
-
-    with rasterio.open(
-        output_path,
-        'w',
-        driver='GTiff',
-        height=contour_data.shape[1] if count == 3 else contour_data.shape[0],
-        width=contour_data.shape[2] if count == 3 else contour_data.shape[1],
-        count=count,
-        dtype=rasterio.uint8,
-        crs=crs,
-        transform=new_transform
-    ) as dst:
-        dst.write(contour_data)
+    # حفظ الصورة
+    plt.savefig(output_path, bbox_inches='tight', dpi=300)
+    plt.close()
 
 # الصفحة الرئيسية
 @app.route('/', methods=['GET', 'POST'])
@@ -125,18 +69,18 @@ def index():
             file.save(filepath)
 
             with rasterio.open(filepath) as dataset:
-                dem_data = dataset.read(1)
+                dem_data = dataset.read(1).astype('float32')
                 transform = dataset.transform
-                crs = dataset.crs
+                if dataset.nodata is not None:
+                    dem_data[dem_data == dataset.nodata] = np.nan
 
-            contour_array = generate_contour(dem_data, interval)
-
-            output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'contour_result.TIF')
-            save_rgb_contour_tif(contour_array, transform, crs, output_path)
+            output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'contour_result.PNG')
+            generate_colored_contour_png(dem_data, transform, output_path, interval)
 
             return send_file(output_path, as_attachment=True)
 
     return render_template('index.html')
+
 
 @app.route("/slop", methods=['POST'])
 def saveSlop():
