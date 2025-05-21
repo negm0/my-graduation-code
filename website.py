@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, send_file, jsonify
 import os
 import tempfile
 from werkzeug.utils import secure_filename
+import cohere
+import json
 
 from matplotlib.patches import Patch
 import matplotlib.colors as mcolors
@@ -17,6 +19,13 @@ from rasterio.transform import Affine
 app = Flask(__name__)
 UPLOAD_FOLDER = tempfile.gettempdir()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Initialize Cohere client - Replace with your API key
+COHERE_API_KEY = "Tf9sHm2wSL2zlxNHnEuk0hzY7r6vRRJxVNsjJ12X"
+co = cohere.Client(COHERE_API_KEY)
+
+# Chat history dictionary to keep track of conversations
+chat_histories = {}
 
 
 # Generate colored contour map
@@ -260,6 +269,56 @@ def generate_aspect_map():
             dst.write(aspect_classes.astype(rasterio.uint8), 1)
 
         return send_file(output_path, as_attachment=True, download_name='aspect_map.tif')
+
+
+# Cohere GIS chat endpoint
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.json
+    user_message = data.get('message', '')
+    session_id = data.get('session_id', 'default')
+
+    # Create a session if it doesn't exist
+    if session_id not in chat_histories:
+        chat_histories[session_id] = [
+            {"role": "SYSTEM",
+             "message": "You are a GIS (Geographic Information System) specialist assistant. Only provide information related to GIS topics, spatial analysis, remote sensing, mapping, and geospatial technologies. If asked about non-GIS topics, politely redirect the conversation to GIS-related subjects. Be helpful, concise, and accurate in your explanations about GIS concepts, tools, and techniques. Format your responses using markdown for better readability - use headings, bullet points, code blocks, and emphasis where appropriate."}
+        ]
+
+    # Add user message to chat history
+    chat_histories[session_id].append({"role": "USER", "message": user_message})
+
+    try:
+        # Get response from Cohere
+        response = co.chat(
+            message=user_message,
+            chat_history=[{"role": m["role"], "message": m["message"]} for m in chat_histories[session_id][1:-1]],
+            preamble=chat_histories[session_id][0]["message"],
+            temperature=0.7,
+            max_tokens=800,
+        )
+
+        # Extract the response text
+        ai_message = response.text
+
+        # Add AI response to chat history
+        chat_histories[session_id].append({"role": "CHATBOT", "message": ai_message})
+
+        # Limit history length to prevent it from growing too large
+        if len(chat_histories[session_id]) > 15:
+            chat_histories[session_id] = [chat_histories[session_id][0]] + chat_histories[session_id][-14:]
+
+        return jsonify({
+            "response": ai_message,
+            "session_id": session_id
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "response": "Sorry, I encountered an error processing your request. Please try again.",
+            "session_id": session_id
+        }), 500
 
 
 if __name__ == '__main__':
