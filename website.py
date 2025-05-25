@@ -65,13 +65,15 @@ def generate_colored_contour_png(dem_data, transform, output_path, interval):
 
 
 # Save contour data as GeoTIFF
-def save_contour_shapefile(dem_data, transform, crs, output_path, interval):
-    from skimage import measure
-    from shapely.geometry import LineString, mapping
-    import fiona
-    from fiona.crs import from_epsg
+import rasterio
+from skimage import measure
+from shapely.geometry import LineString, mapping
+import fiona
+from fiona.crs import from_epsg
+from pyproj import CRS
+import numpy as np
 
-    # استبعاد القيم الفارغة
+def save_contour_shapefile(dem_data, transform, crs, output_path, interval):
     if np.isnan(dem_data).all():
         raise ValueError("DEM contains only NaN values.")
 
@@ -84,22 +86,40 @@ def save_contour_shapefile(dem_data, transform, crs, output_path, interval):
         'properties': {'elev': 'float'}
     }
 
+    epsg_code = None
+    crs_for_fiona = None
+    if crs:
+        epsg_code = crs.to_epsg()
+        if epsg_code:
+            crs_for_fiona = from_epsg(epsg_code)
+        else:
+            crs_for_fiona = {'init': 'epsg:4326'}  # fallback or you can do from_string(crs.to_wkt())
+
     with fiona.open(output_path, 'w',
                     driver='ESRI Shapefile',
-                    crs=crs,
+                    crs=crs_for_fiona,
                     schema=schema) as shp:
-
         for level in levels:
             contours = measure.find_contours(dem_data, level=level)
             for contour in contours:
-                # تحويل إحداثيات البكسل إلى إحداثيات مكانية
-                coords = [~transform * (float(col), float(row)) for row, col in contour]
+                # استخدم rasterio.transform.xy لتحويل الإحداثيات بدقة
+                coords = [rasterio.transform.xy(transform, row, col) for row, col in contour]
                 line = LineString(coords)
                 if line.is_valid:
                     shp.write({
                         'geometry': mapping(line),
                         'properties': {'elev': float(level)}
                     })
+
+    # اكتب ملف .prj يدويا
+    if epsg_code:
+        prj_path = output_path.replace('.shp', '.prj')
+        with open(prj_path, 'w') as prj_file:
+            prj_file.write(CRS.from_epsg(epsg_code).to_wkt())
+
+
+
+
 
 
 
