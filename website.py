@@ -65,27 +65,43 @@ def generate_colored_contour_png(dem_data, transform, output_path, interval):
 
 
 # Save contour data as GeoTIFF
-def save_contour_geotiff(dem_data, transform, profile, output_path, interval):
-    # Create contour array (0 = no contour, 1 = contour)
-    min_val, max_val = np.nanmin(dem_data), np.nanmax(dem_data)
+def save_contour_shapefile(dem_data, transform, crs, output_path, interval):
+    from skimage import measure
+    from shapely.geometry import LineString, mapping
+    import fiona
+    from fiona.crs import from_epsg
+
+    # استبعاد القيم الفارغة
+    if np.isnan(dem_data).all():
+        raise ValueError("DEM contains only NaN values.")
+
+    min_val = np.nanmin(dem_data)
+    max_val = np.nanmax(dem_data)
     levels = np.arange(min_val, max_val, interval)
 
-    contour_data = np.zeros_like(dem_data)
+    schema = {
+        'geometry': 'LineString',
+        'properties': {'elev': 'float'}
+    }
 
-    for level in levels:
-        mask = np.logical_and(dem_data >= level - 0.1, dem_data <= level + 0.1)
-        contour_data[mask] = 1
+    with fiona.open(output_path, 'w',
+                    driver='ESRI Shapefile',
+                    crs=crs,
+                    schema=schema) as shp:
 
-    # Save as GeoTIFF
-    profile.update(
-        dtype=rasterio.uint8,
-        count=1,
-        compress='lzw',
-        nodata=0
-    )
+        for level in levels:
+            contours = measure.find_contours(dem_data, level=level)
+            for contour in contours:
+                # تحويل إحداثيات البكسل إلى إحداثيات مكانية
+                coords = [~transform * (float(col), float(row)) for row, col in contour]
+                line = LineString(coords)
+                if line.is_valid:
+                    shp.write({
+                        'geometry': mapping(line),
+                        'properties': {'elev': float(level)}
+                    })
 
-    with rasterio.open(output_path, 'w', **profile) as dst:
-        dst.write(contour_data.astype(rasterio.uint8), 1)
+
 
 
 # Main route
@@ -117,10 +133,21 @@ def generate_contour():
             output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'contour_result.png')
             generate_colored_contour_png(dem_data, transform, output_path, interval)
             return send_file(output_path, as_attachment=True, download_name='contour_map.png')
+        elif output_format == 'shp':
+            output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'contour_result.shp')
+            save_contour_shapefile(dem_data, transform, dataset.crs, output_path, interval)
+            # ضغط ملفات SHP في ملف zip
+            import zipfile
+            shapefile_base = output_path[:-4]
+            zip_path = shapefile_base + '.zip'
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for ext in ['shp', 'shx', 'dbf', 'prj']:
+                    filepath = shapefile_base + '.' + ext
+                    if os.path.exists(filepath):
+                        zipf.write(filepath, os.path.basename(filepath))
+            return send_file(zip_path, as_attachment=True, download_name='contour_map.zip')
         else:
-            output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'contour_result.tif')
-            save_contour_geotiff(dem_data, transform, profile, output_path, interval)
-            return send_file(output_path, as_attachment=True, download_name='contour_map.tif')
+            return jsonify({"error": "Invalid output format"}), 400
 
     return jsonify({"error": "Invalid input"}), 400
 
