@@ -72,7 +72,7 @@
             width: 200%;
             height: 200%;
             background: linear-gradient(
-                to right, 
+                to right,
                 rgba(255, 255, 255, 0.1) 0%,
                 rgba(255, 255, 255, 0.2) 50%,
                 rgba(255, 255, 255, 0.1) 100%
@@ -309,7 +309,7 @@
             top: 0;
             left: -100%;
             background: linear-gradient(
-                to right, 
+                to right,
                 rgba(255, 255, 255, 0) 0%,
                 rgba(255, 255, 255, 0.3) 50%,
                 rgba(255, 255, 255, 0) 100%
@@ -320,27 +320,6 @@
 
         .btn:hover::after {
             left: 100%;
-        }
-
-        .loading {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-top-color: var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
         }
 
         /* Chat Widget Styling */
@@ -659,15 +638,15 @@
             .container {
                 padding: 1rem;
             }
-            
+
             .tools-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             header h1 {
                 font-size: 2rem;
             }
-            
+
             .format-selection {
                 flex-direction: column;
                 gap: 0.5rem;
@@ -716,12 +695,12 @@
                             <div class="file-name" id="contourFileName"></div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="interval">Contour Interval (m):</label>
                         <input type="number" name="interval" id="interval" value="10" min="1" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Output Format:</label>
                         <div class="format-selection">
@@ -730,20 +709,15 @@
                                 <label for="contour-png"><i class="fas fa-image"></i> PNG Image</label>
                             </div>
                             <div class="format-option">
-                                <input type="radio" id="contour-tif" name="output_format" value="tif">
-                                <label for="contour-tif"><i class="fas fa-globe-americas"></i> GeoTIFF</label>
+                                <input type="radio" id="contour-tif" name="output_format" value="shp">
+                                <label for="contour-tif"><i class="fas fa-globe-americas"></i> .SHP </label>
                             </div>
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="btn" id="contourBtn">
                         <i class="fas fa-map"></i> Generate Contour Map
                     </button>
-                    
-                    <div class="loading" id="contourLoading">
-                        <div class="loading-spinner"></div>
-                        <span>Processing your data...</span>
-                    </div>
                 </form>
             </div>
 
@@ -760,7 +734,7 @@
                             <div class="file-name" id="slopeFileName"></div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Output Format:</label>
                         <div class="format-selection">
@@ -774,15 +748,10 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="btn" id="slopeBtn">
                         <i class="fas fa-chart-line"></i> Generate Slope Map
                     </button>
-                    
-                    <div class="loading" id="slopeLoading">
-                        <div class="loading-spinner"></div>
-                        <span>Processing your data...</span>
-                    </div>
                 </form>
             </div>
 
@@ -799,7 +768,7 @@
                             <div class="file-name" id="aspectFileName"></div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Output Format:</label>
                         <div class="format-selection">
@@ -813,15 +782,10 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="btn" id="aspectBtn">
                         <i class="fas fa-directions"></i> Generate Aspect Map
                     </button>
-                    
-                    <div class="loading" id="aspectLoading">
-                        <div class="loading-spinner"></div>
-                        <span>Processing your data...</span>
-                    </div>
                 </form>
             </div>
         </div>
@@ -830,7 +794,7 @@
     <!-- GIS Chat Widget -->
     <div class="chat-container" id="chatContainer">
         <div class="chat-header" id="chatHeader">
-            <h3><i class="fas fa-robot"></i> GIS Assistant</h3>
+            <h3><i class="fas fa-robot"></i> ASK NEGM </h3>
             <button class="chat-toggle" id="chatToggle">
                 <i class="fas fa-chevron-up"></i>
             </button>
@@ -842,10 +806,10 @@
             <!-- Messages will be appended here dynamically -->
         </div>
         <div class="chat-input">
-            <input 
-                type="text" 
-                id="messageInput" 
-                placeholder="Ask about GIS, remote sensing, etc..." 
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Ask about GIS, remote sensing, etc..."
                 aria-label="Message"
             >
             <button id="sendButton" type="button" aria-label="Send">
@@ -874,13 +838,13 @@
                 }
             }
         });
-        
+
         // File input display and animation
         function setupFileInput(inputId, fileNameId, containerId) {
             const input = document.getElementById(inputId);
             const fileNameElement = document.getElementById(fileNameId);
             const container = document.getElementById(containerId);
-            
+
             input.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
                     fileNameElement.textContent = this.files[0].name;
@@ -888,25 +852,25 @@
                     setTimeout(() => container.classList.remove('pulse'), 1500);
                 }
             });
-            
+
             // Drag and drop functionality
             container.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 container.style.borderColor = '#2a52be';
                 container.style.backgroundColor = 'rgba(42, 82, 190, 0.05)';
             });
-            
+
             container.addEventListener('dragleave', (e) => {
                 e.preventDefault();
                 container.style.borderColor = '#ccc';
                 container.style.backgroundColor = '';
             });
-            
+
             container.addEventListener('drop', (e) => {
                 e.preventDefault();
                 container.style.borderColor = '#ccc';
                 container.style.backgroundColor = '';
-                
+
                 if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                     input.files = e.dataTransfer.files;
                     fileNameElement.textContent = e.dataTransfer.files[0].name;
@@ -915,20 +879,7 @@
                 }
             });
         }
-        
-        // Show loading indicators when forms are submitted
-        function setupFormSubmission(formId, btnId, loadingId) {
-            const form = document.getElementById(formId);
-            const btn = document.getElementById(btnId);
-            const loading = document.getElementById(loadingId);
-            
-            form.addEventListener('submit', function() {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                loading.style.display = 'flex';
-            });
-        }
-        
+
         // Initialize Chat Widget
         function initChat() {
             const chatContainer = document.getElementById('chatContainer');
@@ -937,31 +888,31 @@
             const chatMessages = document.getElementById('chatMessages');
             const messageInput = document.getElementById('messageInput');
             const sendButton = document.getElementById('sendButton');
-            
+
             // Session ID for the chat (can be made more robust with UUID)
             const sessionId = Date.now().toString();
-            
+
             // Toggle chat open/close
             chatHeader.addEventListener('click', () => {
                 chatContainer.classList.toggle('open');
             });
-            
+
             // Handle sending messages
             function sendMessage() {
                 const message = messageInput.value.trim();
                 if (!message) return;
-                
+
                 // Disable input while processing
                 messageInput.disabled = true;
                 sendButton.disabled = true;
-                
+
                 // Add user message to chat
                 appendMessage(message, 'user');
                 messageInput.value = '';
-                
+
                 // Show typing indicator
                 showTypingIndicator();
-                
+
                 // Send to server
                 fetch('/chat', {
                     method: 'POST',
@@ -977,10 +928,10 @@
                 .then(data => {
                     // Hide typing indicator
                     hideTypingIndicator();
-                    
+
                     // Add bot response with markdown parsing
                     appendMessage(data.response, 'bot', true);
-                    
+
                     // Re-enable input
                     messageInput.disabled = false;
                     sendButton.disabled = false;
@@ -989,41 +940,41 @@
                 .catch(error => {
                     // Hide typing indicator
                     hideTypingIndicator();
-                    
+
                     // Show error message
                     appendMessage("Sorry, I encountered an error. Please try again.", 'bot');
-                    
+
                     // Re-enable input
                     messageInput.disabled = false;
                     sendButton.disabled = false;
                     messageInput.focus();
-                    
+
                     console.error('Error:', error);
                 });
             }
-            
+
             // Send on button click
             sendButton.addEventListener('click', sendMessage);
-            
+
             // Send on Enter key
             messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     sendMessage();
                 }
             });
-            
+
             // Append message to chat
             function appendMessage(text, sender, parseMarkdown = false) {
                 const messageElement = document.createElement('div');
                 messageElement.classList.add('message', sender);
-                
+
                 if (parseMarkdown && sender === 'bot') {
                     const markdownContent = document.createElement('div');
                     markdownContent.classList.add('markdown-content');
                     // Convert markdown to HTML
                     markdownContent.innerHTML = marked.parse(text);
                     messageElement.appendChild(markdownContent);
-                    
+
                     // Apply syntax highlighting to code blocks
                     messageElement.querySelectorAll('pre code').forEach((block) => {
                         hljs.highlightBlock(block);
@@ -1031,36 +982,36 @@
                 } else {
                     messageElement.textContent = text;
                 }
-                
+
                 chatMessages.appendChild(messageElement);
-                
+
                 // Scroll to the bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
-            
+
             // Show typing indicator
             function showTypingIndicator() {
                 const typingElement = document.createElement('div');
                 typingElement.classList.add('message', 'bot', 'typing');
                 typingElement.id = 'typingIndicator';
-                
+
                 const dotsContainer = document.createElement('div');
                 dotsContainer.classList.add('dots');
-                
+
                 for (let i = 0; i < 3; i++) {
                     const dot = document.createElement('div');
                     dot.classList.add('dot');
                     dotsContainer.appendChild(dot);
                 }
-                
+
                 typingElement.appendChild(dotsContainer);
                 chatMessages.appendChild(typingElement);
                 typingElement.style.display = 'block';
-                
+
                 // Scroll to the bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
-            
+
             // Hide typing indicator
             function hideTypingIndicator() {
                 const typingElement = document.getElementById('typingIndicator');
@@ -1069,17 +1020,13 @@
                 }
             }
         }
-        
+
         // Initialize all functionalities on page load
         document.addEventListener('DOMContentLoaded', function() {
             setupFileInput('contour_dem', 'contourFileName', 'contourDemContainer');
             setupFileInput('slope_dem', 'slopeFileName', 'slopeDemContainer');
             setupFileInput('aspect_dem', 'aspectFileName', 'aspectDemContainer');
-            
-            setupFormSubmission('contourForm', 'contourBtn', 'contourLoading');
-            setupFormSubmission('slopeForm', 'slopeBtn', 'slopeLoading');
-            setupFormSubmission('aspectForm', 'aspectBtn', 'aspectLoading');
-            
+
             // Initialize chat widget
             initChat();
         });
