@@ -3,7 +3,7 @@ import os
 import tempfile
 from werkzeug.utils import secure_filename
 import cohere
-import json
+import json #جافا اسكربت اوبجكت نوشن
 
 from matplotlib.patches import Patch
 import matplotlib.colors as mcolors
@@ -30,7 +30,7 @@ import fiona
 from fiona.crs import from_epsg  # For older Fiona
 # from fiona import crs  # For newer Fiona (use: crs.CRS.from_epsg(...))
 
-from pyproj import CRS  # For writing .prj manually or converting CRS to dict
+from pyproj import CRS
 
 
 
